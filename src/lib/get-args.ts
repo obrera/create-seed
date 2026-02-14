@@ -14,6 +14,12 @@ export interface Args {
   verbose: boolean
 }
 
+/** Args after prompts have resolved all required fields */
+export interface ResolvedArgs extends Args {
+  name: string
+  template: string
+}
+
 export function getArgs(argv: string[]): Args {
   const { name, version } = getAppInfo()
   const program = new Command()

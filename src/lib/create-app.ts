@@ -1,12 +1,13 @@
 import * as p from '@clack/prompts'
 import { cloneTemplate } from './clone-template.ts'
 import { findTemplate } from './find-template.ts'
-import type { Args } from './get-args.ts'
+import type { ResolvedArgs } from './get-args.ts'
 import { initGit } from './init-git.ts'
 import { installDeps } from './install-deps.ts'
+import { rewritePackageJson } from './rewrite-package-json.ts'
 
 export interface CreateAppOptions {
-  args: Args
+  args: ResolvedArgs
   targetDir: string
 }
 
@@ -24,11 +25,16 @@ async function runStep(title: string, fn: () => Promise<string>): Promise<void> 
 }
 
 export async function createApp({ args, targetDir }: CreateAppOptions): Promise<void> {
-  const template = findTemplate(args.template as string)
+  const template = findTemplate(args.template)
 
   await runStep('Cloning template', async () => {
     await cloneTemplate(template, targetDir)
     return 'Template cloned'
+  })
+
+  await runStep('Rewriting package.json', async () => {
+    rewritePackageJson(targetDir, args.name)
+    return 'Package configured'
   })
 
   if (!args.skipInstall) {
