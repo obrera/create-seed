@@ -6,13 +6,13 @@ Scaffold a new project from a template. Fast, portable, zero config.
 
 ```bash
 # With bun
-bun x create-seed@latest my-app -t gh:beeman/templates/bun-library
+bun x create-seed@latest my-app -t bun-library
 
 # With npx
-npx create-seed@latest my-app -t gh:beeman/templates/bun-library
+npx create-seed@latest my-app -t bun-library
 
 # With pnpx
-pnpx create-seed@latest my-app -t gh:beeman/templates/bun-library
+pnpx create-seed@latest my-app -t bun-library
 ```
 
 ## Options
@@ -38,24 +38,29 @@ Options:
 
 ## Templates
 
-Any GitHub repo (or subdirectory) works as a template:
+Browse available templates at [beeman/templates](https://github.com/beeman/templates).
+
+You can also use any GitHub repo, subdirectory, or local path as a template:
 
 ```bash
-# Full repo
+# Short name (from the default registry)
+bun x create-seed@latest my-app -t bun-library
+
+# GitHub repo
 bun x create-seed@latest my-app -t gh:owner/repo
 
-# Subdirectory of a repo
-bun x create-seed@latest my-app -t gh:owner/repo/path/to/template
+# GitHub subdirectory
+bun x create-seed@latest my-app -t gh:owner/repo/path
+
+# GitHub branch
+bun x create-seed@latest my-app -t gh:owner/repo#my-branch
+
+# GitHub subdirectory on a specific branch
+bun x create-seed@latest my-app -t gh:owner/repo/path#my-branch
 
 # Local path
 bun x create-seed@latest my-app -t ./my-local-template
 ```
-
-### Available templates
-
-| Template | Description |
-|----------|-------------|
-| `gh:beeman/templates/bun-library` | TypeScript library with Bun, tsup, Biome, Changesets |
 
 ## What it does
 
