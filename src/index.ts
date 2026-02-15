@@ -191,6 +191,13 @@ export async function main(argv: string[]): Promise<void> {
   }
 
   const targetDir = resolve(projectName)
+  const cwd = resolve('.')
+  const safePrefix = resolve(cwd, 'a').replace(/a$/, '')
+
+  if (targetDir === cwd || !targetDir.startsWith(safePrefix)) {
+    p.cancel(`Invalid project name: "${projectName}" would target files outside the current directory.`)
+    process.exit(1)
+  }
 
   if (existsSync(targetDir)) {
     const overwrite = await p.confirm({
