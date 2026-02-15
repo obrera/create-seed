@@ -6,6 +6,7 @@ import { detectPm } from './lib/detect-pm.ts'
 import { getAppInfo } from './lib/get-app-info.ts'
 import { getArgs } from './lib/get-args.ts'
 import { getTemplates, type Template } from './lib/get-templates.ts'
+import { generateReadme, generateRegistry, validateRegistry, writeReadme, writeRegistry } from './lib/registry.ts'
 
 export { getAppInfo }
 
@@ -58,7 +59,7 @@ async function promptTemplate(templates: Template[]): Promise<string> {
       ...templates.map((t) => ({
         hint: t.description,
         label: t.name,
-        value: t.repo,
+        value: t.id,
       })),
       { hint: 'Enter a custom template path', label: 'Custom', value: CUSTOM_TEMPLATE },
     ],
@@ -90,8 +91,76 @@ function formatTemplateList(templates: Template[]): string {
   return templates.map((t) => `  ${t.name.padEnd(pad)} ${t.description}`).join('\n')
 }
 
+async function registryGenerate(dir: string): Promise<void> {
+  const { name, version } = getAppInfo()
+  p.intro(`${name} ${version}`)
+
+  const root = resolve(dir)
+  const registry = generateRegistry(root)
+
+  if (registry.templates.length === 0) {
+    p.log.warn('No templates found. Make sure subdirectories contain a package.json.')
+    p.outro('No templates.json generated.')
+    return
+  }
+
+  const registryPath = writeRegistry(root, registry)
+  const readmeContent = generateReadme(root, registry)
+  const readmePath = writeReadme(root, readmeContent)
+
+  p.log.success(`Found ${registry.templates.length} template(s)`)
+  for (const t of registry.templates) {
+    p.log.message(`  ${t.name} — ${t.description || '(no description)'}`)
+  }
+  p.note(`${registryPath}\n${readmePath}`, 'Files written')
+  p.outro('Done!')
+}
+
+async function registryValidate(dir: string): Promise<void> {
+  const { name, version } = getAppInfo()
+  p.intro(`${name} ${version}`)
+
+  const root = resolve(dir)
+  const errors = validateRegistry(root)
+
+  let errorCount = 0
+  let warningCount = 0
+
+  for (const e of errors) {
+    if (e.type === 'error') {
+      errorCount++
+      p.log.error(e.message)
+    } else {
+      warningCount++
+      p.log.warn(e.message)
+    }
+  }
+
+  if (errorCount > 0) {
+    p.outro(`Validation failed: ${errorCount} error(s), ${warningCount} warning(s)`)
+    process.exit(1)
+  }
+
+  if (warningCount > 0) {
+    p.outro(`Validation passed with ${warningCount} warning(s)`)
+    return
+  }
+
+  p.log.success('templates.json is valid')
+  p.outro('All checks passed')
+}
+
 export async function main(argv: string[]): Promise<void> {
   const args = getArgs(argv)
+
+  if (args.command === 'registry-generate') {
+    return registryGenerate(args.registryDir)
+  }
+
+  if (args.command === 'registry-validate') {
+    return registryValidate(args.registryDir)
+  }
+
   const { name, version } = getAppInfo()
 
   p.intro(`${name} ${version}`)
