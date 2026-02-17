@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 import { execAsync } from './exec-async.ts'
 
 export async function rewritePackageJson(targetDir: string, projectName: string): Promise<void> {
@@ -10,7 +10,7 @@ export async function rewritePackageJson(targetDir: string, projectName: string)
 
   const pkg: Record<string, unknown> = JSON.parse(readFileSync(pkgPath, 'utf-8'))
 
-  pkg.name = projectName
+  pkg.name = basename(resolve(projectName))
   pkg.version = '0.0.0'
 
   // Clear template-specific fields
