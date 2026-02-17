@@ -262,7 +262,7 @@ export function validateRegistry(root: string): ValidationError[] {
   const actualTemplates = scanTemplates(root)
   for (const t of actualTemplates) {
     if (!registeredPaths.has(t.path)) {
-      errors.push({ message: `Orphaned template not in registry: ${t.path}`, type: 'warning' })
+      errors.push({ message: `Orphaned template not in registry: ${t.path}`, type: 'error' })
     }
   }
 
