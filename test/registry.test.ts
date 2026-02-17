@@ -234,7 +234,7 @@ describe('validateRegistry', () => {
     expect(errors.some((e) => e.type === 'warning' && e.message.includes('missing description'))).toBe(true)
   })
 
-  test('warns about orphaned templates', () => {
+  test('errors on orphaned templates', () => {
     createTemplate('registered', { name: 'registered' })
     createTemplate('orphan', { name: 'orphan' })
     writeFileSync(
@@ -243,7 +243,7 @@ describe('validateRegistry', () => {
     )
 
     const errors = validateRegistry(root)
-    expect(errors.some((e) => e.type === 'warning' && e.message.includes('orphan'))).toBe(true)
+    expect(errors.some((e) => e.type === 'error' && e.message.includes('orphan'))).toBe(true)
   })
 
   test('passes with valid registry', () => {
