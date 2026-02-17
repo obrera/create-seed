@@ -2,7 +2,7 @@ import * as p from '@clack/prompts'
 import { cloneTemplate } from './clone-template.ts'
 import { findTemplate } from './find-template.ts'
 import type { ResolvedArgs } from './get-args.ts'
-import { initGit } from './init-git.ts'
+import { commitGitRepo, initGitRepo } from './init-git.ts'
 import { installDeps } from './install-deps.ts'
 import { rewritePackageJson } from './rewrite-package-json.ts'
 
@@ -42,6 +42,14 @@ export async function createApp({ args, targetDir }: CreateAppOptions): Promise<
     return 'Package configured'
   })
 
+  // Git init must happen before install so prepare scripts (e.g. lefthook) can find the repo
+  if (!args.skipGit) {
+    await runStep('Initializing git repository', async () => {
+      const result = await initGitRepo(targetDir)
+      return result === 'skipped' ? 'Skipped — git not found' : 'Git initialized'
+    })
+  }
+
   if (!args.skipInstall) {
     await runStep('Installing dependencies', async () => {
       const pm = await installDeps(targetDir, args.pm)
@@ -50,9 +58,9 @@ export async function createApp({ args, targetDir }: CreateAppOptions): Promise<
   }
 
   if (!args.skipGit) {
-    await runStep('Initializing git repository', async () => {
-      const result = await initGit(targetDir)
-      return result === 'skipped' ? 'Skipped — git not found' : 'Git initialized'
+    await runStep('Creating initial commit', async () => {
+      const result = await commitGitRepo(targetDir)
+      return result === 'skipped' ? 'Skipped — git not found' : 'Initial commit created'
     })
   }
 }
