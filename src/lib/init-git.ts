@@ -24,23 +24,34 @@ function execSafe(cmd: string): string | undefined {
   }
 }
 
-export async function initGit(targetDir: string): Promise<'initialized' | 'skipped'> {
-  if (!hasGit()) {
-    return 'skipped'
-  }
-
+function getGitEnv(): NodeJS.ProcessEnv {
   const { name, email } = getGitUser()
-  const env = {
+  return {
     ...process.env,
     GIT_AUTHOR_EMAIL: email,
     GIT_AUTHOR_NAME: name,
     GIT_COMMITTER_EMAIL: email,
     GIT_COMMITTER_NAME: name,
   }
+}
 
+export async function initGitRepo(targetDir: string): Promise<'initialized' | 'skipped'> {
+  if (!hasGit()) {
+    return 'skipped'
+  }
+
+  const env = getGitEnv()
   await execAsync('git', ['init', '-b', 'main'], { cwd: targetDir, env })
-  await execAsync('git', ['add', '.'], { cwd: targetDir, env })
-  await execAsync('git', ['commit', '-m', 'chore: initial commit'], { cwd: targetDir, env })
 
   return 'initialized'
+}
+
+export async function commitGitRepo(targetDir: string): Promise<'committed' | 'skipped'> {
+  if (!hasGit()) {
+    return 'skipped'
+  }
+  const env = getGitEnv()
+  await execAsync('git', ['add', '.'], { cwd: targetDir, env })
+  await execAsync('git', ['commit', '-m', 'chore: initial commit'], { cwd: targetDir, env })
+  return 'committed'
 }

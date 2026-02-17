@@ -10,7 +10,7 @@ const LOCKFILES: Record<PackageManager, string> = {
 }
 
 export async function installDeps(targetDir: string, explicitPm?: string): Promise<PackageManager> {
-  const pm = detectPm(explicitPm)
+  const pm = detectPm(explicitPm, targetDir)
 
   // Delete lockfiles for other package managers
   for (const [key, lockfile] of Object.entries(LOCKFILES)) {
@@ -22,7 +22,11 @@ export async function installDeps(targetDir: string, explicitPm?: string): Promi
     }
   }
 
-  await execAsync(pm, ['install'], { cwd: targetDir, shell: true })
+  // Clean npm_config_user_agent so tools like `only-allow` see the correct PM
+  const env = { ...process.env }
+  delete env.npm_config_user_agent
+
+  await execAsync(pm, ['install'], { cwd: targetDir, env, shell: true })
 
   return pm
 }
