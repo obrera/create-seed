@@ -1,5 +1,17 @@
 # create-seed
 
+## 1.1.0
+
+### Minor Changes
+
+- de86325: Initialize git repo before installing dependencies so prepare scripts (e.g. lefthook) can find the repo. Show full error output when commands fail.
+
+### Patch Changes
+
+- e1f168e: Fix package name when project path is absolute or relative (use basename instead of full path)
+- 3f5050c: Format package.json with biome after rewriting, if biome config exists in the template
+- 769574f: Treat orphaned templates as validation errors instead of warnings
+
 ## 1.0.0
 
 ### Major Changes
