@@ -80,10 +80,14 @@ interface RegistryMeta {
 function readRegistryMeta(root: string): RegistryMeta {
   const pkgPath = join(root, 'package.json')
   if (existsSync(pkgPath)) {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
-    return {
-      description: pkg.description ?? '',
-      name: pkg.name ?? 'Templates',
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+      return {
+        description: pkg.description ?? '',
+        name: pkg.name ?? 'Templates',
+      }
+    } catch {
+      // Fall through to defaults if package.json is malformed
     }
   }
   return { description: '', name: 'Templates' }
@@ -120,7 +124,7 @@ function normalizeRepoSlug(input: unknown): string | undefined {
     .replace(/^https?:\/\/github\.com\//, '')
     .replace(/^git@github\.com:/, '')
 
-  const match = cleaned.match(/^([^/]+\/[^/#]+?)(?:\.git)?(?:[#/].*)?$/)
+  const match = cleaned.match(/^([a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+?)(?:\.git)?(?:[#/].*)?$/)
   return match?.[1]
 }
 
@@ -152,15 +156,28 @@ function detectRepoName(root: string): string | undefined {
   }
 }
 
+function sanitizeMarkdownText(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim()
+}
+
+function sanitizeInlineCode(value: string): string {
+  return sanitizeMarkdownText(value).replace(/`/g, '\\`')
+}
+
+function shellQuote(value: string): string {
+  const singleLine = value.replace(/[\r\n]+/g, '')
+  return `'${singleLine.replace(/'/g, `'"'"'`)}'`
+}
+
 export function generateReadme(root: string, registry: Registry): string {
   const meta = readRegistryMeta(root)
 
   const lines: string[] = []
 
-  lines.push(`# ${meta.name}`)
+  lines.push(`# ${sanitizeMarkdownText(meta.name)}`)
   lines.push('')
   if (meta.description) {
-    lines.push(meta.description)
+    lines.push(sanitizeMarkdownText(meta.description))
     lines.push('')
   }
 
@@ -168,14 +185,18 @@ export function generateReadme(root: string, registry: Registry): string {
   lines.push('')
 
   for (const template of registry.templates) {
-    lines.push(`### \`${template.path}\``)
+    const path = sanitizeInlineCode(template.path ?? '')
+    const description = sanitizeMarkdownText(template.description ?? '')
+    const templateId = shellQuote(template.id ?? '')
+
+    lines.push(`### \`${path}\``)
     lines.push('')
-    if (template.description) {
-      lines.push(template.description)
+    if (description) {
+      lines.push(description)
       lines.push('')
     }
     lines.push('```bash')
-    lines.push(`bun x create-seed@latest my-app -t ${template.id}`)
+    lines.push(`bun x create-seed@latest my-app -t ${templateId}`)
     lines.push('```')
     lines.push('')
   }
@@ -222,7 +243,7 @@ export function validateRegistry(root: string): ValidationError[] {
       continue
     }
     if (!template.path) {
-      errors.push({ message: `Template "${template.name ?? '?'}" missing required field: path`, type: 'error' })
+      errors.push({ message: `Template "${template.name}" missing required field: path`, type: 'error' })
       continue
     }
     if (!template.id) {

@@ -159,6 +159,14 @@ describe('generateRegistry', () => {
     const registry = generateRegistry(root)
     expect(registry.templates[0]?.id).toBe('gh:owner/templates/lib')
   })
+
+  test('falls back to local path when repository slug is invalid', () => {
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ repository: 'owner/templates\nmalicious' }))
+    createTemplate('lib', { description: 'A lib', name: 'lib' })
+
+    const registry = generateRegistry(root)
+    expect(registry.templates[0]?.id).toBe('lib')
+  })
 })
 
 describe('writeRegistry', () => {
@@ -280,6 +288,35 @@ describe('generateReadme', () => {
 
     expect(readme).toContain('# My Templates')
     expect(readme).toContain('Cool stuff')
+  })
+
+  test('falls back to defaults when top-level package.json is malformed', () => {
+    writeFileSync(join(root, 'package.json'), '{not valid json')
+
+    const registry = { templates: [] }
+    const readme = generateReadme(root, registry)
+
+    expect(readme).toContain('# Templates')
+  })
+
+  test('sanitizes template metadata in markdown output', () => {
+    const registry = {
+      templates: [
+        {
+          description: 'desc\nINJECT',
+          id: "gh:owner/templates/lib' && rm -rf /",
+          name: 'my-lib',
+          path: 'my-lib\n# bad',
+        },
+      ],
+    }
+
+    const readme = generateReadme(root, registry)
+
+    expect(readme).toContain('### `my-lib # bad`')
+    expect(readme).toContain('desc INJECT')
+    expect(readme).toContain("bun x create-seed@latest my-app -t 'gh:owner/templates/lib'\"'\"' && rm -rf /'")
+    expect(readme).not.toContain('```bash\nrm -rf')
   })
 
   test('falls back to "Templates" when no package.json', () => {
